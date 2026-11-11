@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block title %}Admin dashboard | Howard’s Billiards Place{% endblock %}
+
+{% block content %}
+<h1>Admin dashboard</h1>
+<p>Manage venue units and monitor their current availability.</p>
+<a class="btn btn-primary" href="{{ url_for('admin.units') }}">Manage units</a>
+{% endblock %}

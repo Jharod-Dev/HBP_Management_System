@@ -1,6 +1,10 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 def now():
-    return datetime.now(ZoneInfo("Asia/Manila")).replace(tzinfo=None)
+    try:
+        manila_timezone = ZoneInfo("Asia/Manila")
+    except ZoneInfoNotFoundError:
+        manila_timezone = timezone(timedelta(hours=8))
+    return datetime.now(manila_timezone).replace(tzinfo=None)

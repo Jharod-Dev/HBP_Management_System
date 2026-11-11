@@ -1,4 +1,4 @@
-USE hbp_db;
+USE hbp_management_system;
 
 -- !! RATES ARE PLACEHOLDERS. Replace with Howard's actual hourly rates before the demo. !!
 -- min_minutes and reservable are also pending client confirmation.
