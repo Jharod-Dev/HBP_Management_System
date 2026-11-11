@@ -29,7 +29,7 @@ try:
 
 except mysql.connector.Error as error:
     raise SystemExit(
-        "Database connection failed. Make sure XAMPP MySQL is running and "
-        "the configured database exists.\n"
+        "Database connection failed. Make sure the MySQL server is running and "
+        "the credentials in .env are correct.\n"
         f"Details: {error}"
     ) from error
