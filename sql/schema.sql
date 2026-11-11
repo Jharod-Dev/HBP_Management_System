@@ -1,8 +1,8 @@
--- Howard's Billiards Place: schema (MySQL 8 / MariaDB 10.4 via XAMPP)
+-- Howard's Billiards Place: schema (MySQL 8)
 -- All times are stored as local (Asia/Manila) DATETIME values; see app/utils/time.py.
 
-CREATE DATABASE IF NOT EXISTS hbp_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE hbp_db;
+CREATE DATABASE IF NOT EXISTS hbp_management_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE hbp_management_system;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS waitlist, loyalty_redemptions, order_items, orders, products,

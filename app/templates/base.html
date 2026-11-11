@@ -10,6 +10,24 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.landing') }}">Howard’s Billiards Place</a>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                {% if session.get("user_id") %}
+                    {% if session.get("role") == "admin" %}
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.units') }}">Manage units</a>
+                    {% else %}
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('customer.dashboard') }}">My dashboard</a>
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('customer.units') }}">Unit availability</a>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-light btn-sm" type="submit">Log out</button>
+                    </form>
+                {% else %}
+                    <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">Log in</a>
+                    <a class="btn btn-light btn-sm" href="{{ url_for('auth.register') }}">Register</a>
+                {% endif %}
+            </div>
         </div>
     </nav>
     <main class="container py-4 flex-grow-1">

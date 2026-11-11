@@ -5,13 +5,19 @@ from flask import current_app
 
 
 def get_connection():
-    return mysql.connector.connect(
-        host=current_app.config["DB_HOST"],
-        port=current_app.config["DB_PORT"],
-        user=current_app.config["DB_USER"],
-        password=current_app.config["DB_PASSWORD"],
-        database=current_app.config["DB_NAME"],
-    )
+    try:
+        return mysql.connector.connect(
+            host=current_app.config["DB_HOST"],
+            port=current_app.config["DB_PORT"],
+            user=current_app.config["DB_USER"],
+            password=current_app.config["DB_PASSWORD"],
+            database=current_app.config["DB_NAME"],
+        )
+    except mysql.connector.Error as error:
+        raise RuntimeError(
+            "Unable to connect to the configured MySQL database. "
+            "Check the database settings in .env."
+        ) from error
 
 
 def fetch_one(query, params=()):

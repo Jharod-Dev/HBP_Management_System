@@ -1,14 +1,15 @@
 from pathlib import Path
 
 import mysql.connector
-from dotenv import load_dotenv
 
 from app.config import Config
 
 
 def run_sql_file(connection, path):
     sql = path.read_text(encoding="utf-8")
-    statements = [statement.strip() for statement in sql.split(";") if statement.strip()]
+    statements = [
+        statement.strip() for statement in sql.split(";") if statement.strip()
+    ]
     with connection.cursor() as cursor:
         for statement in statements:
             cursor.execute(statement)
@@ -16,7 +17,6 @@ def run_sql_file(connection, path):
 
 
 def main():
-    load_dotenv()
     schema_path = Path(__file__).parent.parent / "sql" / "schema.sql"
     seed_path = Path(__file__).parent.parent / "sql" / "seed.sql"
     if not schema_path.is_file() or not seed_path.is_file():

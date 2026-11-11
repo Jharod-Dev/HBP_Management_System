@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Unit availability | Howard’s Billiards Place{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1>Unit availability</h1>
+    <p class="text-muted">Current availability for billiards tables and karaoke booths.</p>
+</div>
+
+{% for unit_type, type_label in [('BILLIARDS', 'Billiards'), ('KARAOKE', 'Karaoke')] %}
+<section class="mb-5">
+    <h2 class="h4">{{ type_label }}</h2>
+    <div class="row g-3">
+        {% for unit in units if unit.unit_type == unit_type %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5 card-title">{{ unit.name }}</h3>
+                    <p class="card-text text-muted">{{ unit.category_name }}</p>
+                    {% if unit.description %}<p class="card-text">{{ unit.description }}</p>{% endif %}
+                    <span class="badge text-bg-{{ {'AVAILABLE': 'success', 'OCCUPIED': 'danger', 'RESERVED': 'warning', 'UNAVAILABLE': 'secondary'}[unit.availability_status] }}">
+                        {{ unit.availability_status|title }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12"><p class="text-muted">No {{ type_label|lower }} units are registered.</p></div>
+        {% endfor %}
+    </div>
+</section>
+{% endfor %}
+{% endblock %}
