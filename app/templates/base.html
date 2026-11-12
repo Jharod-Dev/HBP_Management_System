@@ -15,9 +15,12 @@
                     {% if session.get("role") == "admin" %}
                         <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
                         <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.units') }}">Manage units</a>
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.reservations') }}">Reservations</a>
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('admin.sessions') }}">Sessions</a>
                     {% else %}
                         <a class="btn btn-outline-light btn-sm" href="{{ url_for('customer.dashboard') }}">My dashboard</a>
                         <a class="btn btn-outline-light btn-sm" href="{{ url_for('customer.units') }}">Unit availability</a>
+                        <a class="btn btn-outline-light btn-sm" href="{{ url_for('customer.reservations') }}">My reservations</a>
                     {% endif %}
                     <form method="post" action="{{ url_for('auth.logout') }}" class="d-inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -43,5 +46,6 @@
     <footer class="bg-light border-top py-3">
         <div class="container text-center text-muted">Howard’s Billiards Place</div>
     </footer>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

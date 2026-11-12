@@ -14,14 +14,28 @@
     <div class="row g-3">
         {% for unit in units if unit.unit_type == unit_type %}
         <div class="col-md-6 col-lg-4">
-            <div class="card h-100">
+            <div class="card h-100 unit-card" data-unit-id="{{ unit.id }}">
                 <div class="card-body">
                     <h3 class="h5 card-title">{{ unit.name }}</h3>
                     <p class="card-text text-muted">{{ unit.category_name }}</p>
                     {% if unit.description %}<p class="card-text">{{ unit.description }}</p>{% endif %}
-                    <span class="badge text-bg-{{ {'AVAILABLE': 'success', 'OCCUPIED': 'danger', 'RESERVED': 'warning', 'UNAVAILABLE': 'secondary'}[unit.availability_status] }}">
+                    <span class="badge unit-status text-bg-{{ {'AVAILABLE': 'success', 'OCCUPIED': 'danger', 'RESERVED': 'warning', 'PREPARING': 'info', 'UNAVAILABLE': 'secondary'}[unit.availability_status] }}">
                         {{ unit.availability_status|title }}
                     </span>
+                    {% if unit.availability_status == 'OCCUPIED' %}
+                    <small class="d-block text-muted session-countdown"
+                        data-session-end="{{ unit.active_scheduled_end.isoformat() if unit.active_scheduled_end else '' }}">
+                        {% if unit.active_scheduled_end %}
+                        Remaining — {{ '%02d:%02d:%02d'|format(unit.active_remaining_seconds // 3600, (unit.active_remaining_seconds % 3600) // 60, unit.active_remaining_seconds % 60) }}
+                        {% else %}TIME EXPIRED{% endif %}
+                    </small>
+                    {% endif %}
+                    {% if unit.availability_status == 'PREPARING' %}
+                    <small class="d-block text-muted preparation-countdown"
+                        data-preparation-until="{{ unit.preparation_until.isoformat() }}">
+                        Preparing — {{ '%02d:%02d'|format(unit.preparation_remaining_seconds // 60, unit.preparation_remaining_seconds % 60) }}
+                    </small>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -31,4 +45,82 @@
     </div>
 </section>
 {% endfor %}
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const endpoint = "{{ url_for('customer.unit_availability') }}";
+  const badgeClasses = ["text-bg-success", "text-bg-danger", "text-bg-warning", "text-bg-info", "text-bg-secondary"];
+  const labels = {
+    AVAILABLE: "Available", OCCUPIED: "Occupied", RESERVED: "Reserved",
+    PREPARING: "Preparing", UNAVAILABLE: "Unavailable"
+  };
+  const refreshUnit = async (unitId) => {
+    const response = await fetch(endpoint);
+    if (!response.ok) return;
+    const units = await response.json();
+    const unit = units.find((item) => String(item.id) === String(unitId));
+    const card = document.querySelector(`[data-unit-id="${unitId}"]`);
+    if (!unit || !card) return;
+    const badge = card.querySelector(".unit-status");
+    badge.classList.remove(...badgeClasses);
+    badge.classList.add({
+      AVAILABLE: "text-bg-success", OCCUPIED: "text-bg-danger",
+      RESERVED: "text-bg-warning", PREPARING: "text-bg-info",
+      UNAVAILABLE: "text-bg-secondary"
+    }[unit.availability_status]);
+    badge.textContent = labels[unit.availability_status];
+    let countdown = card.querySelector(".session-countdown");
+    if (unit.availability_status === "OCCUPIED" && unit.scheduled_end) {
+      if (!countdown) {
+        countdown = document.createElement("small");
+        countdown.className = "d-block text-muted session-countdown";
+        card.querySelector(".card-body").appendChild(countdown);
+      }
+      countdown.dataset.sessionEnd = unit.scheduled_end;
+      startSessionCountdown(countdown);
+    } else {
+      countdown?.remove();
+    }
+    if (unit.availability_status !== "PREPARING") {
+      card.querySelector(".preparation-countdown")?.remove();
+    }
+  };
+  const startSessionCountdown = (element) => {
+    if (element._sessionTimer) clearInterval(element._sessionTimer);
+    const end = new Date(element.dataset.sessionEnd.replace(" ", "T"));
+    const update = () => {
+      const seconds = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 1000));
+      element.textContent = seconds === 0
+        ? "TIME EXPIRED"
+        : `Remaining — ${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+      if (seconds === 0) {
+        clearInterval(element._sessionTimer);
+        element._sessionTimer = null;
+      }
+    };
+    update();
+    if (end.getTime() > Date.now()) element._sessionTimer = setInterval(update, 1000);
+  };
+  document.querySelectorAll(".session-countdown[data-session-end]").forEach(startSessionCountdown);
+
+  document.querySelectorAll(".preparation-countdown").forEach((element) => {
+    if (element._preparationTimer) clearInterval(element._preparationTimer);
+    const unitId = element.closest(".unit-card").dataset.unitId;
+    const until = new Date(element.dataset.preparationUntil.replace(" ", "T"));
+    const update = () => {
+      const seconds = Math.max(0, Math.ceil((until.getTime() - Date.now()) / 1000));
+      if (seconds === 0) {
+        clearInterval(element._preparationTimer);
+        element._preparationTimer = null;
+        refreshUnit(unitId);
+        return;
+      }
+      element.textContent = `Preparing — ${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+    };
+    update();
+    if (until.getTime() > Date.now()) element._preparationTimer = setInterval(update, 1000);
+  });
+})();
+</script>
 {% endblock %}

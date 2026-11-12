@@ -1,4 +1,6 @@
 from ..db import execute, fetch_all, fetch_one
+from datetime import timedelta
+
 from ..utils.time import now
 
 
@@ -13,6 +15,19 @@ AVAILABILITY_SQL = """
         c.name AS category_name,
         c.unit_type,
         c.hourly_rate,
+        (
+            SELECT MAX(s.ended_at)
+            FROM sessions s
+            WHERE s.unit_id = u.id
+              AND s.status = 'COMPLETED'
+              AND s.ended_at IS NOT NULL
+        ) AS latest_ended_at,
+        (
+            SELECT MAX(s.scheduled_end)
+            FROM sessions s
+            WHERE s.unit_id = u.id
+              AND s.status = 'ACTIVE'
+        ) AS active_scheduled_end,
         CASE
             WHEN u.is_active = 0 OR u.status = 'UNAVAILABLE'
                 THEN 'UNAVAILABLE'
@@ -23,6 +38,15 @@ AVAILABILITY_SQL = """
                   AND s.status = 'ACTIVE'
             )
                 THEN 'OCCUPIED'
+            WHEN EXISTS (
+                SELECT 1
+                FROM sessions s
+                WHERE s.unit_id = u.id
+                  AND s.status = 'COMPLETED'
+                  AND s.ended_at IS NOT NULL
+                  AND s.ended_at > %s
+            )
+                THEN 'PREPARING'
             WHEN EXISTS (
                 SELECT 1
                 FROM reservations r
@@ -42,7 +66,31 @@ AVAILABILITY_SQL = """
 
 def get_units_with_availability():
     current_time = now()
-    return fetch_all(AVAILABILITY_SQL, (current_time, current_time))
+    units = fetch_all(
+        AVAILABILITY_SQL,
+        (current_time - timedelta(seconds=30), current_time, current_time),
+    )
+    for unit in units:
+        unit["active_remaining_seconds"] = (
+            max(
+                0,
+                int(
+                    (unit["active_scheduled_end"] - current_time).total_seconds()
+                ),
+            )
+            if unit["active_scheduled_end"] is not None
+            else 0
+        )
+        if unit["latest_ended_at"] is None:
+            unit["preparation_until"] = None
+            unit["preparation_remaining_seconds"] = 0
+            continue
+        preparation_until = unit["latest_ended_at"] + timedelta(seconds=30)
+        unit["preparation_until"] = preparation_until
+        unit["preparation_remaining_seconds"] = max(
+            0, int((preparation_until - current_time).total_seconds())
+        )
+    return units
 
 
 def get_unit(unit_id):
