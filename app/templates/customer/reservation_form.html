@@ -3,10 +3,11 @@
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-lg-8">
-    <h1>New reservation</h1>
+    <div class="page-heading"><div><h1>New reservation</h1>
     <p class="text-muted">Same-day reservations are available Monday through Saturday, 8:00 AM to 10:00 PM. Requests require administrator approval.</p>
+    </div></div>
     {% if errors.form %}<div class="alert alert-danger">{{ errors.form }}</div>{% endif %}
-    <form method="post" class="card card-body shadow-sm">
+    <form method="post" class="card card-body">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <label class="form-label" for="unit_id">Unit</label>

@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Session management{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-heading">
   <div>
     <h1>Session management</h1>
     <p class="text-muted mb-0">Start walk-ins, manage reservations, and monitor preparation.</p>
   </div>
 </div>
 
-<div class="card card-body shadow-sm mb-4">
-  <h2 class="h5">Start session</h2>
+<div class="card card-body mb-4">
+  <h2 class="h5 mb-1">Start a session</h2>
+  <p class="text-muted small mb-3">Start a walk-in for an available unit. The initial allocation is one hour.</p>
   <form method="post" action="{{ url_for('admin.start') }}" class="row g-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="col-md-4">
+    <div class="col-md-4 customer-search-wrap">
       <select class="form-select" name="unit_id" required>
         <option value="">Select available unit</option>
         {% for unit in startable_units %}
@@ -29,10 +30,9 @@
     </div>
     <div class="col-md-2"><button class="btn btn-primary">Start session</button></div>
   </form>
-  <p class="small text-muted mt-2 mb-0">Walk-in sessions start now with the minimum one-hour allocation.</p>
 </div>
 
-<div class="table-responsive">
+<div class="card table-responsive">
   <table class="table align-middle">
     <thead><tr><th>Unit</th><th>Customer</th><th>Status</th><th>Schedule</th><th>Charge</th><th>Actions</th></tr></thead>
     <tbody>
