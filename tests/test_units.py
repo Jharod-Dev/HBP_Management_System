@@ -21,6 +21,7 @@ class UnitRoutesTestCase(unittest.TestCase):
 
     def test_unauthenticated_unit_routes_redirect(self):
         self.assertEqual(self.client.get("/customer/units").status_code, 302)
+        self.assertEqual(self.client.get("/customer/units/availability").status_code, 302)
         self.assertEqual(self.client.get("/admin/units").status_code, 302)
 
     @patch("app.blueprints.customer.get_units_with_availability", return_value=[])
@@ -28,6 +29,38 @@ class UnitRoutesTestCase(unittest.TestCase):
         self.set_session("customer")
         response = self.client.get("/customer/units")
         self.assertEqual(response.status_code, 200)
+        get_units.assert_called_once_with()
+
+    @patch(
+        "app.blueprints.customer.get_units_with_availability",
+        return_value=[
+            {
+                "id": 3,
+                "availability_status": "OCCUPIED",
+                "active_scheduled_end": None,
+                "active_remaining_seconds": 0,
+                "preparation_remaining_seconds": 0,
+            }
+        ],
+    )
+    def test_customer_availability_payload_exposes_only_session_timing(
+        self, get_units
+    ):
+        self.set_session("customer")
+        response = self.client.get("/customer/units/availability")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()[0]
+        self.assertEqual(payload["id"], 3)
+        self.assertEqual(payload["remaining_seconds"], 0)
+        self.assertNotIn("email", payload)
+        self.assertNotIn("user_id", payload)
+
+    @patch("app.blueprints.customer.get_units_with_availability", return_value=[])
+    def test_customer_availability_endpoint_returns_latest_snapshot(self, get_units):
+        self.set_session("customer")
+        response = self.client.get("/customer/units/availability")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), [])
         get_units.assert_called_once_with()
 
     @patch("app.blueprints.admin.get_units_with_availability", return_value=[])
