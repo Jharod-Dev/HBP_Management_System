@@ -48,7 +48,33 @@ def _render_unit_form(template, unit=None, errors=None, form=None):
 @admin_bp.get("/dashboard")
 @role_required("admin")
 def dashboard():
-    return render_template("admin/dashboard.html")
+    try:
+        units = get_units_with_availability()
+        sessions = get_admin_sessions()
+        pending_reservations = get_admin_reservations("PENDING")
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load the operational overview. Please try again.", "danger")
+        units, sessions, pending_reservations = [], [], []
+
+    active_units = [unit for unit in units if unit["is_active"]]
+    stats = {
+        "active_units": len(active_units),
+        "available_units": sum(
+            unit["availability_status"] == "AVAILABLE" for unit in active_units
+        ),
+        "occupied_units": sum(
+            unit["availability_status"] == "OCCUPIED" for unit in active_units
+        ),
+        "preparing_units": sum(
+            unit["availability_status"] == "PREPARING" for unit in active_units
+        ),
+        "active_sessions": sum(item["status"] == "ACTIVE" for item in sessions),
+        "expired_sessions": sum(
+            item["status"] == "ACTIVE" and item["time_expired"] for item in sessions
+        ),
+        "pending_reservations": len(pending_reservations),
+    }
+    return render_template("admin/dashboard.html", stats=stats)
 
 
 @admin_bp.get("/units")

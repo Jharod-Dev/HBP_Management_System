@@ -3,8 +3,13 @@
 {% block title %}Welcome | Howard’s Billiards Place{% endblock %}
 
 {% block content %}
-<section class="text-center py-5">
-    <h1 class="display-4">Welcome to Howard’s Billiards Place</h1>
-    <p class="lead">Reserve your next billiards table or karaoke session with us.</p>
+<section class="hero-panel">
+    <p class="eyebrow text-uppercase fw-bold mb-3">Play. Gather. Enjoy.</p>
+    <h1 class="display-4">Your next great night starts here.</h1>
+    <p class="lead">Reserve a billiards table or karaoke booth at Howard’s Billiards Place.</p>
+    <div class="d-flex flex-wrap gap-2 justify-content-center mt-4">
+        <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Create an account</a>
+        <a class="btn btn-outline-primary btn-lg" href="{{ url_for('auth.login') }}">Log in</a>
+    </div>
 </section>
 {% endblock %}

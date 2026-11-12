@@ -21,7 +21,21 @@ customer_bp = Blueprint("customer", __name__, url_prefix="/customer")
 @customer_bp.get("/dashboard")
 @login_required
 def dashboard():
-    return render_template("customer/dashboard.html")
+    try:
+        reservations = get_customer_reservations(session["user_id"])
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load your reservation activity. Please try again.", "danger")
+        reservations = []
+    return render_template(
+        "customer/dashboard.html",
+        reservations=reservations,
+        current_reservations=[
+            item
+            for item in reservations
+            if item["status"] in {"PENDING", "CONFIRMED", "ACTIVE"}
+        ],
+        customer_name=session.get("first_name") or "there",
+    )
 
 
 @customer_bp.get("/units")
