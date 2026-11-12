@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if unit else "Add" }} unit | Howard’s Billiards Place{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="page-heading"><div><p class="eyebrow text-uppercase text-muted small fw-bold mb-2">Unit configuration</p><h1>{{ "Edit" if unit else "Add" }} unit</h1></div></div>
+        <form method="post" class="card card-body" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label" for="name">Unit name</label>
+                <input class="form-control{% if errors.get('name') %} is-invalid{% endif %}"
+                       id="name" name="name" maxlength="50" required
+                       value="{{ form.get('name', unit.name if unit else '') }}">
+                {% if errors.get('name') %}<div class="invalid-feedback">{{ errors['name'] }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="category_id">Category</label>
+                <select class="form-select{% if errors.get('category_id') %} is-invalid{% endif %}"
+                        id="category_id" name="category_id" required>
+                    <option value="">Select a category</option>
+                    {% set selected_category = form.get('category_id', unit.category_id if unit else '') %}
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if selected_category|string == category.id|string %}selected{% endif %}>
+                        {{ category.name }} ({{ category.unit_type|title }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if errors.get('category_id') %}<div class="invalid-feedback">{{ errors['category_id'] }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="description">Description</label>
+                <textarea class="form-control{% if errors.get('description') %} is-invalid{% endif %}"
+                          id="description" name="description" maxlength="255">{{ form.get('description', unit.description if unit else '') }}</textarea>
+                {% if errors.get('description') %}<div class="invalid-feedback">{{ errors['description'] }}</div>{% endif %}
+            </div>
+            {% if unit %}
+            <div class="mb-3">
+                <label class="form-label" for="status">Operational status</label>
+                <select class="form-select{% if errors.get('status') %} is-invalid{% endif %}"
+                        id="status" name="status">
+                    {% set selected_status = form.get('status', unit.status) %}
+                    {% for status in statuses %}
+                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|title }}</option>
+                    {% endfor %}
+                </select>
+                {% if errors.get('status') %}<div class="invalid-feedback">{{ errors['status'] }}</div>{% endif %}
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1"
+                       {% if form.get('is_active', '1' if unit.is_active else '') == '1' %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">Active unit</label>
+            </div>
+            {% endif %}
+            <button class="btn btn-primary" type="submit">Save unit</button>
+            <a class="btn btn-link" href="{{ url_for('admin.units') }}">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

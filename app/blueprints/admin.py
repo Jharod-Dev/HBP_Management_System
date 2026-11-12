@@ -1,4 +1,5 @@
 import mysql.connector
+from decimal import Decimal, InvalidOperation
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
 from ..services.units import (
@@ -27,11 +28,43 @@ from ..services.sessions import (
     get_startable_units,
     start_session,
 )
+from ..services.pos import (
+    POSNotFound,
+    POSValidationError,
+    create_product,
+    get_admin_orders,
+    get_product,
+    get_products,
+    update_order_status,
+    update_product,
+)
 from ..utils.email import send_reservation_decision
 from ..utils.auth import role_required
 from ..utils.units import UNIT_STATUSES, validate_unit_form
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+def _product_form(form):
+    errors = {}
+    name = form.get("name", "").strip()
+    try:
+        price = Decimal(form.get("price", ""))
+        if price < 0:
+            raise InvalidOperation
+    except (InvalidOperation, TypeError, ValueError):
+        price = None
+        errors["price"] = "Enter a valid non-negative price."
+    try:
+        stock_qty = int(form.get("stock_qty", ""))
+        if stock_qty < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        stock_qty = None
+        errors["stock_qty"] = "Enter a non-negative whole number."
+    if not name:
+        errors["name"] = "Product name is required."
+    return errors, name, price, stock_qty
 
 
 def _render_unit_form(template, unit=None, errors=None, form=None):
@@ -75,6 +108,90 @@ def dashboard():
         "pending_reservations": len(pending_reservations),
     }
     return render_template("admin/dashboard.html", stats=stats)
+
+
+@admin_bp.get("/products")
+@role_required("admin")
+def products():
+    try:
+        product_list = get_products(include_inactive=True)
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load product information. Please try again.", "danger")
+        product_list = []
+    return render_template("admin/products.html", products=product_list)
+
+
+@admin_bp.route("/products/new", methods=("GET", "POST"))
+@role_required("admin")
+def new_product():
+    if request.method == "POST":
+        errors, name, price, stock_qty = _product_form(request.form)
+        if not errors:
+            try:
+                create_product(name, price, stock_qty)
+            except (mysql.connector.Error, RuntimeError) as error:
+                if isinstance(error, mysql.connector.Error) and error.errno == 1062:
+                    errors["name"] = "A product with that name already exists."
+                else:
+                    flash("We could not add the product. Please try again.", "danger")
+            else:
+                flash("Product added successfully.", "success")
+                return redirect(url_for("admin.products"))
+        return render_template("admin/product_form.html", product=None, errors=errors, form=request.form), 400
+    return render_template("admin/product_form.html", product=None, errors={}, form={})
+
+
+@admin_bp.route("/products/<int:product_id>/edit", methods=("GET", "POST"))
+@role_required("admin")
+def edit_product(product_id):
+    product = get_product(product_id)
+    if product is None:
+        return render_template("errors/404.html"), 404
+    if request.method == "POST":
+        errors, name, price, stock_qty = _product_form(request.form)
+        if not errors:
+            try:
+                update_product(
+                    product_id, name, price, stock_qty,
+                    1 if request.form.get("is_active") == "1" else 0,
+                )
+            except (mysql.connector.Error, RuntimeError) as error:
+                if isinstance(error, mysql.connector.Error) and error.errno == 1062:
+                    errors["name"] = "A product with that name already exists."
+                else:
+                    flash("We could not update the product. Please try again.", "danger")
+            else:
+                flash("Product updated successfully.", "success")
+                return redirect(url_for("admin.products"))
+        return render_template("admin/product_form.html", product=product, errors=errors, form=request.form), 400
+    return render_template("admin/product_form.html", product=product, errors={}, form={})
+
+
+@admin_bp.get("/orders")
+@role_required("admin")
+def orders():
+    try:
+        order_list = get_admin_orders()
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load order information. Please try again.", "danger")
+        order_list = []
+    return render_template("admin/orders.html", orders=order_list)
+
+
+@admin_bp.post("/orders/<int:order_id>/status")
+@role_required("admin")
+def order_status(order_id):
+    try:
+        update_order_status(order_id, request.form.get("status", ""))
+    except POSNotFound:
+        flash("Order not found.", "danger")
+    except POSValidationError as error:
+        flash(str(error), "danger")
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not update the order. Please try again.", "danger")
+    else:
+        flash("Order status updated.", "success")
+    return redirect(url_for("admin.orders"))
 
 
 @admin_bp.get("/units")

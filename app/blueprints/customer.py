@@ -14,6 +14,15 @@ from ..services.reservations import (
 from ..utils.auth import login_required
 from ..utils.time import now
 from ..services.units import get_units_with_availability
+from ..services.pos import (
+    POSNotFound,
+    POSValidationError,
+    create_order,
+    get_customer_active_sessions,
+    get_customer_orders,
+    get_products,
+    update_order_status,
+)
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/customer")
 
@@ -26,6 +35,11 @@ def dashboard():
     except (mysql.connector.Error, RuntimeError):
         flash("We could not load your reservation activity. Please try again.", "danger")
         reservations = []
+    try:
+        products = get_products()
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load the snacks and drinks catalog. Please try again.", "danger")
+        products = []
     return render_template(
         "customer/dashboard.html",
         reservations=reservations,
@@ -35,7 +49,74 @@ def dashboard():
             if item["status"] in {"PENDING", "CONFIRMED", "ACTIVE"}
         ],
         customer_name=session.get("first_name") or "there",
+        dashboard_products=products[:3],
+        product_count=len(products),
     )
+
+
+@customer_bp.get("/shop")
+@login_required
+def shop():
+    try:
+        products = get_products()
+        active_sessions = get_customer_active_sessions(session["user_id"])
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load the product catalog. Please try again.", "danger")
+        products, active_sessions = [], []
+    return render_template(
+        "customer/shop.html", products=products, active_sessions=active_sessions
+    )
+
+
+@customer_bp.post("/orders")
+@login_required
+def create_customer_order():
+    items = [
+        (key[len("quantity_"):], value)
+        for key, value in request.form.items()
+        if key.startswith("quantity_") and value
+    ]
+    try:
+        session_id = int(request.form.get("session_id", ""))
+        order_id = create_order(session["user_id"], session_id, items)
+    except (TypeError, ValueError):
+        flash("Select an active session and at least one product.", "danger")
+        return redirect(url_for("customer.shop"))
+    except POSValidationError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("customer.shop"))
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not submit your order. Please try again.", "danger")
+        return redirect(url_for("customer.shop"))
+    flash(f"Order #{order_id} submitted for preparation.", "success")
+    return redirect(url_for("customer.orders"))
+
+
+@customer_bp.get("/orders")
+@login_required
+def orders():
+    try:
+        order_list = get_customer_orders(session["user_id"])
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not load your order history. Please try again.", "danger")
+        order_list = []
+    return render_template("customer/orders.html", orders=order_list)
+
+
+@customer_bp.post("/orders/<int:order_id>/cancel")
+@login_required
+def cancel_order(order_id):
+    try:
+        update_order_status(order_id, "CANCELLED", user_id=session["user_id"])
+    except POSNotFound:
+        flash("Order not found.", "danger")
+    except POSValidationError as error:
+        flash(str(error), "danger")
+    except (mysql.connector.Error, RuntimeError):
+        flash("We could not cancel the order. Please try again.", "danger")
+    else:
+        flash("Order cancelled and stock restored.", "success")
+    return redirect(url_for("customer.orders"))
 
 
 @customer_bp.get("/units")

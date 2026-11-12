@@ -48,10 +48,14 @@
                 <a class="nav-link {% if request.endpoint in ('admin.units', 'admin.new_unit', 'admin.edit_unit') %}active{% endif %}" href="{{ url_for('admin.units') }}"><span>◫</span> Units</a>
                 <a class="nav-link {% if request.endpoint == 'admin.reservations' %}active{% endif %}" href="{{ url_for('admin.reservations') }}"><span>◷</span> Reservations</a>
                 <a class="nav-link {% if request.endpoint in ('admin.sessions', 'admin.start', 'admin.extend', 'admin.complete') %}active{% endif %}" href="{{ url_for('admin.sessions') }}"><span>◉</span> Sessions</a>
+                <a class="nav-link {% if request.endpoint in ('admin.products', 'admin.new_product', 'admin.edit_product') %}active{% endif %}" href="{{ url_for('admin.products') }}"><span>▤</span> Products</a>
+                <a class="nav-link {% if request.endpoint in ('admin.orders', 'admin.order_status') %}active{% endif %}" href="{{ url_for('admin.orders') }}"><span>▣</span> Orders</a>
                 {% else %}
                 <a class="nav-link {% if request.endpoint == 'customer.dashboard' %}active{% endif %}" href="{{ url_for('customer.dashboard') }}"><span>▦</span> Dashboard</a>
                 <a class="nav-link {% if request.endpoint == 'customer.units' %}active{% endif %}" href="{{ url_for('customer.units') }}"><span>◫</span> Unit availability</a>
                 <a class="nav-link {% if request.endpoint in ('customer.reservations', 'customer.new_reservation') %}active{% endif %}" href="{{ url_for('customer.reservations') }}"><span>◷</span> My reservations</a>
+                <a class="nav-link {% if request.endpoint == 'customer.shop' %}active{% endif %}" href="{{ url_for('customer.shop') }}"><span>▤</span> Snacks &amp; Drinks</a>
+                <a class="nav-link {% if request.endpoint in ('customer.orders', 'customer.cancel_order') %}active{% endif %}" href="{{ url_for('customer.orders') }}"><span>▣</span> My orders</a>
                 {% endif %}
             </nav>
             <div class="sidebar-footer mt-auto">

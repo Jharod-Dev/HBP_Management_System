@@ -10,6 +10,29 @@
     <div class="col-md-6"><a class="card stat-card text-decoration-none h-100" href="{{ url_for('customer.units') }}"><span class="stat-card__icon">◫</span><span><strong class="d-block text-dark">Browse availability</strong><small class="text-muted">See live unit and preparation status</small></span></a></div>
     <div class="col-md-6"><a class="card stat-card text-decoration-none h-100" href="{{ url_for('customer.new_reservation') }}"><span class="stat-card__icon">+</span><span><strong class="d-block text-dark">Make a reservation</strong><small class="text-muted">Request a same-day booking</small></span></a></div>
 </div>
+<section class="card mt-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div><p class="eyebrow text-uppercase text-muted small fw-bold mb-2">During your visit</p><h2 class="h4 mb-1">Snacks &amp; Drinks</h2><p class="text-muted mb-0">Order snacks and beverages for delivery to your active session.</p></div>
+            <a class="btn btn-primary" href="{{ url_for('customer.shop') }}">Order Now</a>
+        </div>
+        {% if dashboard_products %}
+        <div class="row g-3 product-preview-list">
+            {% for product in dashboard_products %}
+            <div class="col-sm-6 col-lg-4">
+                <div class="border rounded-3 p-3 h-100 d-flex justify-content-between align-items-center gap-3">
+                    <div><strong class="d-block">{{ product.name }}</strong><span class="text-muted small">Unit price: ₱{{ '%.2f'|format(product.price) }}</span></div>
+                    {% if product.stock_qty > 0 %}<span class="badge text-bg-success">{{ product.stock_qty }} available</span>{% else %}<span class="badge text-bg-secondary">Out of stock</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if product_count > 3 %}<a class="d-inline-block mt-3 small" href="{{ url_for('customer.shop') }}">View all snacks and drinks →</a>{% endif %}
+        {% else %}
+        <div class="empty-state py-3"><p class="mb-1">No snacks or drinks are available right now.</p><small class="text-muted">Please check back during your visit.</small></div>
+        {% endif %}
+    </div>
+</section>
 <div class="row g-4 mt-2">
     <div class="col-lg-7">
         <div class="card h-100">
