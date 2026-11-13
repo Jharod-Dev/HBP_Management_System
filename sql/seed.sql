@@ -4,7 +4,7 @@ USE hbp_management_system;
 -- min_minutes and reservable are also pending client confirmation.
 INSERT INTO unit_categories (name, unit_type, hourly_rate, min_minutes, reservable) VALUES
   ('VIP Billiards',    'BILLIARDS', 200.00, 30, 1),
-  ('Normal Billiards', 'BILLIARDS', 120.00, 30, 0),
+  ('Normal Billiards', 'BILLIARDS', 100.00, 30, 0),
   ('Karaoke Booth',    'KARAOKE',   250.00, 30, 1);
 
 -- Unit counts confirmed by the developer: 3 VIP, 3 normal, 3 karaoke.

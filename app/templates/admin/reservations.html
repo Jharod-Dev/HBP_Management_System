@@ -2,7 +2,7 @@
 {% block title %}Reservation management{% endblock %}
 {% block content %}
 <div class="page-heading">
-  <div><h1>Reservation management</h1><p class="text-muted mb-0">Review requests and manage the daily schedule.</p></div>
+  <div><p class="page-kicker mb-2">Operations</p><h1>Reservation management</h1><p class="text-muted mb-0">Review requests and manage the daily schedule.</p></div>
 </div>
 <form class="card card-body row g-2 mb-4" method="get">
   <div class="col-md-3">
@@ -16,17 +16,18 @@
   <div class="col-md-3"><input class="form-control" type="date" name="date" value="{{ selected_date }}"></div>
   <div class="col-md-2"><button class="btn btn-outline-primary">Apply filters</button></div>
 </form>
-<div class="table-responsive">
+<div class="table-responsive table-shell">
   <table class="table align-middle">
-    <thead><tr><th>Customer</th><th>Unit</th><th>Schedule</th><th>Status</th><th>Actions</th></tr></thead>
+    <caption class="visually-hidden">Reservation requests and decisions</caption>
+    <thead><tr><th scope="col">Customer</th><th scope="col">Unit</th><th scope="col">Schedule</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
     <tbody>
     {% for reservation in reservations %}
       <tr>
         <td>{{ reservation.first_name }} {{ reservation.last_name }}<br><small>{{ reservation.email }}</small></td>
         <td>{{ reservation.unit_name }}<br><small>{{ reservation.category_name }}</small></td>
         <td>{{ reservation.start_time.strftime("%b %d, %Y %I:%M %p") }}<br>to {{ reservation.end_time.strftime("%I:%M %p") }}</td>
-        <td><span class="badge text-bg-secondary">{{ reservation.status }}</span></td>
-        <td class="text-nowrap">
+        <td><span class="badge status-badge status-{{ reservation.status|lower }}">{{ reservation.status|title }}</span></td>
+        <td class="text-nowrap"><div class="action-group">
           {% if reservation.status == "PENDING" %}
           <form class="d-inline" method="post" action="{{ url_for('admin.approve', reservation_id=reservation.id) }}" onsubmit="return confirm('Approve this reservation?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-success">Approve</button></form>
           <form class="d-inline" method="post" action="{{ url_for('admin.reject', reservation_id=reservation.id) }}" onsubmit="return confirm('Reject this reservation?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Reject</button></form>
@@ -40,7 +41,7 @@
           </form>
           <form class="d-inline" method="post" action="{{ url_for('admin.cancel', reservation_id=reservation.id) }}" onsubmit="return confirm('Cancel this reservation?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Cancel</button></form>
           <form class="d-inline" method="post" action="{{ url_for('admin.no_show', reservation_id=reservation.id) }}" onsubmit="return confirm('Mark this reservation as a no-show?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">No-show</button></form>
-          {% endif %}
+          {% endif %}</div>
         </td>
       </tr>
     {% else %}

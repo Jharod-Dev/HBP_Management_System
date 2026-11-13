@@ -123,6 +123,20 @@ class POSRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         create_product.assert_called_once_with("Soda", 45.50, 12)
 
+    @patch(
+        "app.blueprints.admin.create_product",
+        side_effect=RuntimeError("database unavailable"),
+    )
+    def test_product_creation_error_is_handled_without_name_error(self, create_product):
+        self.set_session("admin")
+        response = self.client.post(
+            "/admin/products/new",
+            data={"name": "Soda", "price": "45.50", "stock_qty": "12"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(b"We could not add the product. Please try again.", response.data)
+        create_product.assert_called_once_with("Soda", 45.50, 12)
+
     @patch("app.blueprints.customer.get_customer_active_sessions", return_value=[])
     @patch(
         "app.blueprints.customer.get_products",

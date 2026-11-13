@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}My orders{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow text-uppercase text-muted small fw-bold mb-2">Point of sale</p><h1>My orders</h1><p>Track refreshments ordered during your sessions.</p></div><a class="btn btn-primary" href="{{ url_for('customer.shop') }}">Order refreshments</a></div>
+<div class="page-heading"><div><p class="page-kicker mb-2">Point of sale</p><h1>My orders</h1><p>Track snacks and drinks ordered during your sessions.</p></div><a class="btn btn-primary" href="{{ url_for('customer.shop') }}">Order snacks &amp; drinks</a></div>
 <div class="card table-responsive"><table class="table align-middle"><thead><tr><th>Order</th><th>Unit</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>
 {% for order in orders %}<tr><td>#{{ order.id }}<small class="d-block text-muted">{{ order.created_at.strftime("%b %d, %I:%M %p") }}</small></td><td>{{ order.unit_name }}</td><td>{{ order.item_summary }}</td><td>₱{{ '%.2f'|format(order.total) }}</td><td><span class="badge text-bg-{{ {'PENDING': 'warning', 'DELIVERED': 'success', 'CANCELLED': 'secondary'}[order.status] }}">{{ order.status|title }}</span></td><td>{% if order.status == 'PENDING' %}<form method="post" action="{{ url_for('customer.cancel_order', order_id=order.id) }}" onsubmit="return confirm('Cancel this order and restore stock?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Cancel</button></form>{% endif %}</td></tr>
 {% else %}<tr><td colspan="6" class="empty-state">You have not placed any orders.</td></tr>{% endfor %}

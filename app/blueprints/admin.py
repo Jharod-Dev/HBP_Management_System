@@ -41,7 +41,6 @@ from ..services.pos import (
 from ..utils.email import send_reservation_decision
 from ..utils.auth import role_required
 from ..utils.units import UNIT_STATUSES, validate_unit_form
-
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 

@@ -393,12 +393,21 @@ def get_admin_sessions(current=None):
         """
         SELECT s.id, s.unit_id, s.user_id, s.customer_name, s.reservation_id,
                s.started_at, s.scheduled_end, s.ended_at, s.status,
-               s.hourly_rate_applied, s.total_cost, u.name AS unit_name,
+               s.hourly_rate_applied, s.total_cost,
+               u.name AS unit_name,
                c.name AS category_name, c.unit_type
         FROM sessions s
         INNER JOIN units u ON u.id = s.unit_id
         INNER JOIN unit_categories c ON c.id = u.category_id
-        ORDER BY s.status, s.scheduled_end
+        ORDER BY
+            CASE s.status
+                WHEN 'ACTIVE' THEN 0
+                WHEN 'COMPLETED' THEN 1
+                ELSE 2
+            END,
+            CASE WHEN s.status = 'ACTIVE' THEN s.scheduled_end END ASC,
+            CASE WHEN s.status = 'COMPLETED' THEN s.ended_at END DESC,
+            s.id DESC
         """
     )
     for row in rows:

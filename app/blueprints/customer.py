@@ -23,7 +23,6 @@ from ..services.pos import (
     get_products,
     update_order_status,
 )
-
 customer_bp = Blueprint("customer", __name__, url_prefix="/customer")
 
 

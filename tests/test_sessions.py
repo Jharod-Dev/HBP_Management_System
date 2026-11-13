@@ -113,6 +113,5 @@ class SessionRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         complete_session.assert_called_once_with(11)
 
-
 if __name__ == "__main__":
     unittest.main()

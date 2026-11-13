@@ -6,6 +6,7 @@ from app.services.reservations import (
     ReservationError,
     _validate_schedule,
     create_reservation,
+    get_customer_reservations,
     validate_no_show_time,
 )
 
@@ -17,9 +18,15 @@ class ReservationValidationTestCase(unittest.TestCase):
         end = _validate_schedule(datetime(2026, 3, 10, 14, 0), 2, self.CURRENT)
         self.assertEqual(end, datetime(2026, 3, 10, 16, 0))
 
-    def test_rejects_invalid_duration(self):
-        with self.assertRaisesRegex(ReservationError, "1, 2, or 3"):
-            _validate_schedule(datetime(2026, 3, 10, 14, 0), 4, self.CURRENT)
+    def test_rejects_duration_over_maximum(self):
+        with self.assertRaisesRegex(ReservationError, "between 1 and 14"):
+            _validate_schedule(datetime(2026, 3, 10, 13, 0), 15, self.CURRENT)
+
+    @patch("app.services.reservations.fetch_all", return_value=[])
+    def test_customer_reservations_are_newest_first(self, fetch_all):
+        get_customer_reservations(4)
+        query = fetch_all.call_args.args[0]
+        self.assertIn("ORDER BY r.start_time DESC, r.created_at DESC, r.id DESC", query)
 
     def test_rejects_sunday_and_future_dates(self):
         with self.assertRaisesRegex(ReservationError, "Sundays"):
