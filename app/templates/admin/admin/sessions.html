@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Session management{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Session management</h1>
+    <p class="text-muted mb-0">Start walk-ins, manage reservations, and monitor preparation.</p>
+  </div>
+</div>
+
+<div class="card card-body mb-4">
+  <h2 class="h5 mb-1">Start a session</h2>
+  <p class="text-muted small mb-3">Start a walk-in for an available unit. The initial allocation is one hour.</p>
+  <form method="post" action="{{ url_for('admin.start') }}" class="row g-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-md-4 customer-search-wrap">
+      <select class="form-select" name="unit_id" required>
+        <option value="">Select available unit</option>
+        {% for unit in startable_units %}
+        <option value="{{ unit.id }}">{{ unit.name }} — {{ unit.category_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="customer-search">Customer</label>
+      <input class="form-control" id="customer-search" type="search" autocomplete="off" placeholder="Search by name, email, or ID" required>
+      <input id="customer-id" name="customer_id" type="hidden" required>
+      <div id="customer-results" class="list-group mt-1" role="listbox"></div>
+      <small id="customer-selection" class="text-muted">Select a registered customer.</small>
+    </div>
+    <div class="col-md-2"><button class="btn btn-primary">Start session</button></div>
+  </form>
+</div>
+
+<div class="card table-responsive">
+  <table class="table align-middle">
+    <thead><tr><th>Unit</th><th>Customer</th><th>Status</th><th>Schedule</th><th>Charge</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for item in sessions %}
+      <tr data-unit-id="{{ item.unit_id }}">
+        <td>{{ item.unit_name }}<br><small>{{ item.category_name }}</small></td>
+        <td>{{ item.customer_name or (item.first_name ~ ' ' ~ item.last_name if item.first_name is defined else 'Reserved customer') }}</td>
+        <td>
+          {% if item.status == "ACTIVE" %}
+          {% if item.time_expired %}
+          <span class="badge text-bg-warning session-status">TIME EXPIRED</span>
+          {% else %}
+          <span class="badge text-bg-danger session-status">OCCUPIED</span>
+          {% endif %}
+          <br><small class="session-countdown"
+            data-session-end="{{ item.scheduled_end.isoformat() }}"
+            data-session-expired="{{ 'true' if item.time_expired else 'false' }}">
+            {% if item.time_expired %}TIME EXPIRED{% else %}{{ (item.remaining_seconds // 60) }}m {{ item.remaining_seconds % 60 }}s remaining{% endif %}
+          </small>
+          {% elif item.is_preparing %}
+          <span class="badge text-bg-info session-status">PREPARING</span>
+          <br><small class="preparation-countdown"
+            data-preparation-until="{{ item.preparation_until.isoformat() }}">
+            Preparing — {{ '%02d:%02d'|format(item.preparation_remaining_seconds // 60, item.preparation_remaining_seconds % 60) }}
+          </small>
+          {% else %}
+          <span class="badge text-bg-secondary">COMPLETED</span>
+          {% endif %}
+        </td>
+        <td>{{ item.started_at.strftime("%b %d, %Y %I:%M %p") }}<br>to {{ item.scheduled_end.strftime("%I:%M %p") }}</td>
+        <td>{{ item.total_cost }}</td>
+        <td class="text-nowrap">
+          {% if item.status == "ACTIVE" %}
+          <form class="d-inline" method="post" action="{{ url_for('admin.extend', session_id=item.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="minutes" class="form-select form-select-sm d-inline-block" style="width: 90px"><option value="30">30 min</option><option value="60">60 min</option></select>
+            <button class="btn btn-sm btn-outline-primary">Extend</button>
+          </form>
+          <form class="d-inline" method="post" action="{{ url_for('admin.complete', session_id=item.id) }}" onsubmit="return confirm('End this session and calculate the final bill?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger">End session</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">No sessions recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const searchInput = document.getElementById("customer-search");
+  const customerId = document.getElementById("customer-id");
+  const results = document.getElementById("customer-results");
+  const selection = document.getElementById("customer-selection");
+  let debounceTimer;
+
+  if (searchInput && results) {
+    searchInput.addEventListener("input", () => {
+      customerId.value = "";
+      selection.textContent = "Select a registered customer.";
+      clearTimeout(debounceTimer);
+      const query = searchInput.value.trim();
+      results.replaceChildren();
+      if (query.length < 2) return;
+      debounceTimer = setTimeout(async () => {
+        const response = await fetch(`{{ url_for('admin.search_customers') }}?q=${encodeURIComponent(query)}`);
+        if (!response.ok) return;
+        const customers = await response.json();
+        customers.forEach((customer) => {
+          const option = document.createElement("button");
+          option.type = "button";
+          option.className = "list-group-item list-group-item-action";
+          option.textContent = `${customer.name} — ${customer.email} (ID ${customer.id})`;
+          option.addEventListener("click", () => {
+            customerId.value = customer.id;
+            searchInput.value = customer.name;
+            selection.textContent = `Selected customer ID ${customer.id}`;
+            results.replaceChildren();
+          });
+          results.appendChild(option);
+        });
+      }, 250);
+    });
+  }
+
+  document.querySelectorAll(".session-countdown").forEach((element) => {
+    if (element._countdownTimer) clearInterval(element._countdownTimer);
+    const status = element.closest("td").querySelector(".session-status");
+    const end = new Date(element.dataset.sessionEnd.replace(" ", "T"));
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((end.getTime() - Date.now()) / 1000));
+      if (remaining === 0) {
+        element.textContent = "TIME EXPIRED";
+        element.dataset.sessionExpired = "true";
+        if (status) status.textContent = "TIME EXPIRED";
+        clearInterval(element._countdownTimer);
+        element._countdownTimer = null;
+        return;
+      }
+      element.textContent = `${Math.floor(remaining / 60)}m ${remaining % 60}s remaining`;
+    };
+    update();
+    if (element.dataset.sessionExpired !== "true") {
+      element._countdownTimer = setInterval(update, 1000);
+    }
+  });
+
+  document.querySelectorAll(".preparation-countdown").forEach((element) => {
+    if (element._preparationTimer) clearInterval(element._preparationTimer);
+    const row = element.closest("tr");
+    const unitId = row.dataset.unitId;
+    const until = new Date(element.dataset.preparationUntil.replace(" ", "T"));
+    const update = () => {
+      const seconds = Math.max(0, Math.ceil((until.getTime() - Date.now()) / 1000));
+      if (seconds === 0) {
+        clearInterval(element._preparationTimer);
+        element._preparationTimer = null;
+        fetch("{{ url_for('admin.session_unit_availability') }}")
+          .then((response) => response.ok ? response.json() : [])
+          .then((units) => {
+            const unit = units.find((item) => String(item.id) === String(unitId));
+            if (unit && unit.availability_status === "AVAILABLE") {
+              element.textContent = "Available";
+              row.querySelector(".session-status").textContent = "AVAILABLE";
+              row.querySelector(".session-status").className = "badge text-bg-success session-status";
+            } else {
+              element.textContent = unit ? unit.availability_status : "Availability pending";
+            }
+          });
+        return;
+      }
+      element.textContent = `Preparing — ${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+    };
+    update();
+    if (until.getTime() > Date.now()) element._preparationTimer = setInterval(update, 1000);
+  });
+})();
+</script>
+{% endblock %}

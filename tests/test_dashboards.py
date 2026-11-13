@@ -73,13 +73,45 @@ class DashboardRoutesTestCase(unittest.TestCase):
             }
         ],
     )
-    def test_customer_dashboard_uses_only_current_customer_records(self, get_reservations):
+    @patch(
+        "app.blueprints.customer.get_products",
+        return_value=[{"name": "Soda", "price": 45, "stock_qty": 3}],
+    )
+    def test_customer_dashboard_uses_only_current_customer_records(
+        self, get_products, get_reservations
+    ):
         self.set_session("customer", user_id=9)
         response = self.client.get("/customer/dashboard")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Hello, Alex.", response.data)
         self.assertIn(b"VIP Table 1", response.data)
+        self.assertIn(b"Soda", response.data)
+        self.assertIn(b"Unit price: ", response.data)
+        self.assertIn(b"3 available", response.data)
         get_reservations.assert_called_once_with(9)
+        get_products.assert_called_once_with()
+
+    @patch("app.blueprints.customer.get_customer_reservations", return_value=[])
+    @patch("app.blueprints.customer.get_products", return_value=[])
+    def test_customer_dashboard_shows_empty_product_state(
+        self, get_products, get_reservations
+    ):
+        self.set_session("customer", user_id=9)
+        response = self.client.get("/customer/dashboard")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"No snacks or drinks are available right now.", response.data)
+        self.assertNotIn(b"class=\"product-preview-list\"", response.data)
+
+    @patch("app.blueprints.customer.get_products", return_value=[])
+    @patch("app.blueprints.customer.get_customer_reservations", return_value=[])
+    def test_customer_sidebar_uses_snacks_and_drinks_label(
+        self, get_reservations, get_products
+    ):
+        self.set_session("customer", user_id=9)
+        response = self.client.get("/customer/dashboard")
+        self.assertIn(b"Snacks &amp; Drinks", response.data)
+        self.assertIn(b"/customer/shop", response.data)
+        self.assertNotIn(b">Refreshments<", response.data)
 
     def test_logout_clears_session_and_returns_public_landing(self):
         self.set_session("customer")

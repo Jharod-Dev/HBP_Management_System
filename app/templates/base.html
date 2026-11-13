@@ -11,10 +11,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body class="app-shell">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <nav class="navbar navbar-expand-lg topbar">
         <div class="container-fluid px-3 px-lg-4">
-            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+            <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Open navigation">
+                <span class="navbar-toggler-icon" aria-hidden="true"></span>
             </button>
             <a class="navbar-brand brand-mark" href="{{ url_for('main.landing') }}">
                 <span class="brand-mark__icon">H</span>
@@ -41,17 +42,25 @@
             <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body d-flex flex-column">
-            <p class="sidebar-label">Navigation</p>
+            <p class="sidebar-label">Workspace</p>
             <nav class="nav flex-column gap-1">
                 {% if session.get("role") == "admin" %}
                 <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}"><span>▦</span> Dashboard</a>
+                <p class="sidebar-group-label">Operations</p>
                 <a class="nav-link {% if request.endpoint in ('admin.units', 'admin.new_unit', 'admin.edit_unit') %}active{% endif %}" href="{{ url_for('admin.units') }}"><span>◫</span> Units</a>
                 <a class="nav-link {% if request.endpoint == 'admin.reservations' %}active{% endif %}" href="{{ url_for('admin.reservations') }}"><span>◷</span> Reservations</a>
                 <a class="nav-link {% if request.endpoint in ('admin.sessions', 'admin.start', 'admin.extend', 'admin.complete') %}active{% endif %}" href="{{ url_for('admin.sessions') }}"><span>◉</span> Sessions</a>
+                <p class="sidebar-group-label">Sales &amp; inventory</p>
+                <a class="nav-link {% if request.endpoint in ('admin.products', 'admin.new_product', 'admin.edit_product') %}active{% endif %}" href="{{ url_for('admin.products') }}"><span>▤</span> Products</a>
+                <a class="nav-link {% if request.endpoint in ('admin.orders', 'admin.order_status') %}active{% endif %}" href="{{ url_for('admin.orders') }}"><span>▣</span> Orders</a>
                 {% else %}
                 <a class="nav-link {% if request.endpoint == 'customer.dashboard' %}active{% endif %}" href="{{ url_for('customer.dashboard') }}"><span>▦</span> Dashboard</a>
+                <p class="sidebar-group-label">Visit planning</p>
                 <a class="nav-link {% if request.endpoint == 'customer.units' %}active{% endif %}" href="{{ url_for('customer.units') }}"><span>◫</span> Unit availability</a>
                 <a class="nav-link {% if request.endpoint in ('customer.reservations', 'customer.new_reservation') %}active{% endif %}" href="{{ url_for('customer.reservations') }}"><span>◷</span> My reservations</a>
+                <p class="sidebar-group-label">During your visit</p>
+                <a class="nav-link {% if request.endpoint == 'customer.shop' %}active{% endif %}" href="{{ url_for('customer.shop') }}"><span>▤</span> Snacks &amp; Drinks</a>
+                <a class="nav-link {% if request.endpoint in ('customer.orders', 'customer.cancel_order') %}active{% endif %}" href="{{ url_for('customer.orders') }}"><span>▣</span> My orders</a>
                 {% endif %}
             </nav>
             <div class="sidebar-footer mt-auto">
@@ -64,7 +73,7 @@
         </div>
     </aside>
     {% endif %}
-    <main class="app-main {% if session.get('user_id') %}with-sidebar{% endif %}">
+    <main id="main-content" class="app-main {% if session.get('user_id') %}with-sidebar{% endif %}" tabindex="-1">
       <div class="container-fluid page-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}

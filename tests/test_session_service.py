@@ -72,6 +72,14 @@ class SessionServiceTestCase(unittest.TestCase):
         self.assertEqual(sessions[0]["remaining_seconds"], 0)
         complete.assert_not_called()
 
+    @patch("app.services.sessions.fetch_all", return_value=[])
+    def test_sessions_order_active_then_newest_completed(self, fetch_all):
+        get_admin_sessions(current=self.CURRENT)
+        query = fetch_all.call_args.args[0]
+        self.assertIn("WHEN 'ACTIVE' THEN 0", query)
+        self.assertIn("WHEN 'COMPLETED' THEN 1", query)
+        self.assertIn("CASE WHEN s.status = 'COMPLETED' THEN s.ended_at END DESC", query)
+
     @patch("app.services.sessions._transaction", return_value=41)
     def test_start_requires_walk_in_name(self, transaction):
         with self.assertRaisesRegex(SessionError, "customer"):
@@ -83,7 +91,6 @@ class SessionServiceTestCase(unittest.TestCase):
         with self.assertRaisesRegex(SessionError, "customer"):
             start_session(3, 9, current=self.CURRENT)
         transaction.assert_not_called()
-
 
 if __name__ == "__main__":
     unittest.main()

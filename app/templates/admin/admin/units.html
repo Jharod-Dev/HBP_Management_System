@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Unit management | Howard’s Billiards Place{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Unit management</h1>
+        <p class="text-muted mb-0">Manage units without deleting historical records.</p>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('admin.new_unit') }}">+ Add unit</a>
+</div>
+
+{% if units %}
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Unit</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Availability</th>
+                <th>Operational</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for unit in units %}
+            <tr>
+                <td>{{ unit.name }}</td>
+                <td>{{ unit.category_name }}</td>
+                <td>{{ unit.unit_type|title }}</td>
+                <td>
+                    <span class="badge text-bg-{{ {'AVAILABLE': 'success', 'OCCUPIED': 'danger', 'RESERVED': 'warning', 'UNAVAILABLE': 'secondary'}[unit.availability_status] }}">
+                        {{ unit.availability_status|title }}
+                    </span>
+                </td>
+                <td>{{ "Active" if unit.is_active else "Deactivated" }}</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.edit_unit', unit_id=unit.id) }}">Edit</a>
+                    {% if unit.is_active %}
+                    <form class="d-inline" method="post" action="{{ url_for('admin.deactivate_unit', unit_id=unit.id) }}"
+                          onsubmit="return confirm('Deactivate this unit? Existing records will be preserved.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Deactivate</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card empty-state">No units are registered yet.</div>
+{% endif %}
+{% endblock %}

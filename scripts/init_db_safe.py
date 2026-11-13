@@ -14,7 +14,7 @@ from app.config import Config
 SCHEMA_PATH = PROJECT_ROOT / "sql" / "schema.sql"
 SEED_PATH = PROJECT_ROOT / "sql" / "seed.sql"
 TARGET_DATABASE = "hbp_management_system"
-EXPECTED_TABLE_COUNT = 12
+EXPECTED_TABLE_COUNT = 11
 EXPECTED_TABLES = {
     "unit_categories",
     "units",
@@ -26,7 +26,6 @@ EXPECTED_TABLES = {
     "products",
     "orders",
     "order_items",
-    "loyalty_redemptions",
     "waitlist",
 }
 

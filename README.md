@@ -58,3 +58,6 @@ started for confirmed reservations or walk-ins, extended in 30-minute
 increments, and completed manually. A completed unit remains `PREPARING` for
 30 seconds based on the server-side `ended_at` timestamp before it becomes
 available again.
+
+Normal billiards tables use the ₱100 hourly rate in fresh seed data. Existing
+session records retain their original recorded costs.

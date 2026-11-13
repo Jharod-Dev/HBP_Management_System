@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Snacks &amp; Drinks{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow text-uppercase text-muted small fw-bold mb-2">Point of sale</p>
+        <h1>Snacks &amp; Drinks</h1>
+        <p>Browse snacks and beverages, then order them for delivery during your visit.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('customer.orders') }}">My orders</a>
+</div>
+
+{% if not active_sessions %}
+<div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-3" role="status">
+    <span>You can browse the catalog now. Start an active session before submitting an order.</span>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('customer.units') }}">View unit availability</a>
+</div>
+{% endif %}
+
+{% if products %}
+{% if active_sessions %}
+<form method="post" action="{{ url_for('customer.create_customer_order') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card card-body mb-4">
+        <label class="form-label" for="session_id">Deliver to session</label>
+        <select class="form-select" id="session_id" name="session_id" required>
+            {% for item in active_sessions %}
+            <option value="{{ item.id }}">{{ item.unit_name }} — until {{ item.scheduled_end.strftime("%I:%M %p") }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{% endif %}
+
+<div class="row g-3">
+    {% for product in products %}
+    <div class="col-sm-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between gap-2">
+                    <h2 class="h5">{{ product.name }}</h2>
+                    <strong class="text-nowrap">₱{{ '%.2f'|format(product.price) }}</strong>
+                </div>
+                {% if product.stock_qty > 0 %}
+                <p class="text-success small mb-3">{{ product.stock_qty }} available</p>
+                <label class="form-label small" for="quantity_{{ product.id }}">Quantity</label>
+                <input class="form-control order-quantity" id="quantity_{{ product.id }}"
+                       name="quantity_{{ product.id }}" type="number" min="0"
+                       max="{{ product.stock_qty }}" value="0"
+                       data-price="{{ product.price }}"
+                       {% if not active_sessions %}disabled{% endif %}>
+                {% else %}
+                <p class="text-muted small mb-0">Currently out of stock</p>
+                <span class="badge text-bg-secondary">Out of stock</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if active_sessions %}
+    <div class="card card-body mt-4 d-flex flex-row justify-content-between align-items-center gap-3">
+        <div>
+            <strong>Order summary</strong>
+            <small class="d-block text-muted"><span id="order-item-count">0</span> items selected</small>
+        </div>
+        <strong id="order-total">₱0.00</strong>
+    </div>
+    <button class="btn btn-primary mt-3" type="submit">Review and submit order</button>
+</form>
+{% else %}
+    <p class="text-muted small mt-3 mb-0">Quantity selection becomes available when you have an active session.</p>
+{% endif %}
+{% else %}
+<div class="card empty-state">
+    <h2 class="h5">No snacks or drinks are available</h2>
+    <p class="mb-0">Please check back later during your visit.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const quantities = document.querySelectorAll(".order-quantity:not(:disabled)");
+  const itemCount = document.getElementById("order-item-count");
+  const total = document.getElementById("order-total");
+  if (!quantities.length || !itemCount || !total) return;
+  const updateSummary = () => {
+    let count = 0;
+    let amount = 0;
+    quantities.forEach((input) => {
+      const quantity = Math.max(0, Number.parseInt(input.value, 10) || 0);
+      count += quantity;
+      amount += quantity * (Number.parseFloat(input.dataset.price) || 0);
+    });
+    itemCount.textContent = count;
+    total.textContent = `₱${amount.toFixed(2)}`;
+  };
+  quantities.forEach((input) => input.addEventListener("input", updateSummary));
+  updateSummary();
+})();
+</script>
+{% endblock %}

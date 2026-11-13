@@ -7,7 +7,7 @@ from ..utils.time import now
 OPENING_TIME = time(8, 0)
 CLOSING_TIME = time(22, 0)
 MINIMUM_HOURS = 1
-MAXIMUM_HOURS = 3
+MAXIMUM_HOURS = 14
 CANCELLATION_MINUTES = 30
 NO_SHOW_GRACE_MINUTES = 5
 BLOCKING_STATUSES = ("PENDING", "CONFIRMED")
@@ -38,8 +38,11 @@ def _validate_schedule(start_at, duration_hours, current):
         raise ReservationError("Reservations are available for today only.")
     if start_at <= current:
         raise ReservationError("The reservation start time must be in the future.")
-    if duration_hours not in (1, 2, 3):
-        raise ReservationError("Reservation duration must be 1, 2, or 3 hours.")
+    if not MINIMUM_HOURS <= duration_hours <= MAXIMUM_HOURS:
+        raise ReservationError(
+            f"Reservation duration must be between {MINIMUM_HOURS} and "
+            f"{MAXIMUM_HOURS} hours."
+        )
     end_at = start_at + timedelta(hours=duration_hours)
     if start_at.time() < OPENING_TIME or end_at.time() > CLOSING_TIME:
         raise ReservationError("Reservations must fit within 8:00 AM to 10:00 PM.")
@@ -207,7 +210,7 @@ def get_customer_reservations(user_id):
         INNER JOIN units u ON u.id = r.unit_id
         INNER JOIN unit_categories c ON c.id = u.category_id
         WHERE r.user_id = %s
-        ORDER BY r.start_time DESC
+        ORDER BY r.start_time DESC, r.created_at DESC, r.id DESC
         """,
         (user_id,),
     )

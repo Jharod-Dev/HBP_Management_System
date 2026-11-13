@@ -3,6 +3,7 @@
 {% block content %}
 <div class="page-heading">
   <div>
+    <p class="page-kicker mb-2">Operations</p>
     <h1>Session management</h1>
     <p class="text-muted mb-0">Start walk-ins, manage reservations, and monitor preparation.</p>
   </div>
@@ -13,7 +14,8 @@
   <p class="text-muted small mb-3">Start a walk-in for an available unit. The initial allocation is one hour.</p>
   <form method="post" action="{{ url_for('admin.start') }}" class="row g-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="col-md-4 customer-search-wrap">
+    <div class="col-md-4">
+      <label class="form-label" for="unit_id">Unit</label>
       <select class="form-select" name="unit_id" required>
         <option value="">Select available unit</option>
         {% for unit in startable_units %}
@@ -28,13 +30,16 @@
       <div id="customer-results" class="list-group mt-1" role="listbox"></div>
       <small id="customer-selection" class="text-muted">Select a registered customer.</small>
     </div>
-    <div class="col-md-2"><button class="btn btn-primary">Start session</button></div>
+    <div class="col-md-2 session-start-action">
+      <button class="btn btn-primary" type="submit">Start session</button>
+    </div>
   </form>
 </div>
 
-<div class="card table-responsive">
+<div class="card table-responsive table-shell">
   <table class="table align-middle">
-    <thead><tr><th>Unit</th><th>Customer</th><th>Status</th><th>Schedule</th><th>Charge</th><th>Actions</th></tr></thead>
+    <caption class="visually-hidden">Active and completed venue sessions</caption>
+    <thead><tr><th scope="col">Unit</th><th scope="col">Customer</th><th scope="col">Status</th><th scope="col">Schedule</th><th scope="col">Charge</th><th scope="col">Actions</th></tr></thead>
     <tbody>
     {% for item in sessions %}
       <tr data-unit-id="{{ item.unit_id }}">
@@ -43,9 +48,9 @@
         <td>
           {% if item.status == "ACTIVE" %}
           {% if item.time_expired %}
-          <span class="badge text-bg-warning session-status">TIME EXPIRED</span>
+          <span class="badge status-badge status-expired session-status">TIME EXPIRED</span>
           {% else %}
-          <span class="badge text-bg-danger session-status">OCCUPIED</span>
+          <span class="badge status-badge status-occupied session-status">OCCUPIED</span>
           {% endif %}
           <br><small class="session-countdown"
             data-session-end="{{ item.scheduled_end.isoformat() }}"
@@ -53,28 +58,30 @@
             {% if item.time_expired %}TIME EXPIRED{% else %}{{ (item.remaining_seconds // 60) }}m {{ item.remaining_seconds % 60 }}s remaining{% endif %}
           </small>
           {% elif item.is_preparing %}
-          <span class="badge text-bg-info session-status">PREPARING</span>
+          <span class="badge status-badge status-preparing session-status">PREPARING</span>
           <br><small class="preparation-countdown"
             data-preparation-until="{{ item.preparation_until.isoformat() }}">
             Preparing — {{ '%02d:%02d'|format(item.preparation_remaining_seconds // 60, item.preparation_remaining_seconds % 60) }}
           </small>
           {% else %}
-          <span class="badge text-bg-secondary">COMPLETED</span>
+          <span class="badge status-badge status-{{ item.status|lower }}">{{ item.status|title }}</span>
           {% endif %}
         </td>
         <td>{{ item.started_at.strftime("%b %d, %Y %I:%M %p") }}<br>to {{ item.scheduled_end.strftime("%I:%M %p") }}</td>
         <td>{{ item.total_cost }}</td>
-        <td class="text-nowrap">
+        <td class="session-actions">
           {% if item.status == "ACTIVE" %}
-          <form class="d-inline" method="post" action="{{ url_for('admin.extend', session_id=item.id) }}">
+          <div class="action-group">
+          <form method="post" action="{{ url_for('admin.extend', session_id=item.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <select name="minutes" class="form-select form-select-sm d-inline-block" style="width: 90px"><option value="30">30 min</option><option value="60">60 min</option></select>
             <button class="btn btn-sm btn-outline-primary">Extend</button>
           </form>
-          <form class="d-inline" method="post" action="{{ url_for('admin.complete', session_id=item.id) }}" onsubmit="return confirm('End this session and calculate the final bill?');">
+          <form method="post" action="{{ url_for('admin.complete', session_id=item.id) }}" onsubmit="return confirm('End this session and calculate the final bill?');">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-danger">End session</button>
           </form>
+          </div>
           {% endif %}
         </td>
       </tr>

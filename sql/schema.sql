@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS hbp_management_system CHARACTER SET utf8mb4 COLLAT
 USE hbp_management_system;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS waitlist, loyalty_redemptions, order_items, orders, products,
+DROP TABLE IF EXISTS waitlist, order_items, orders, products,
     session_extensions, sessions, reservations, email_tokens, users, units, unit_categories;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -136,17 +136,6 @@ CREATE TABLE order_items (
     CONSTRAINT fk_item_order   FOREIGN KEY (order_id)   REFERENCES orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_item_product FOREIGN KEY (product_id) REFERENCES products(id),
     CONSTRAINT chk_item_qty    CHECK (quantity > 0)
-) ENGINE=InnoDB;
-
--- Loyalty progress is COMPUTED from sessions (distinct days per unit_type); only redemptions are stored.
-CREATE TABLE loyalty_redemptions (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    user_id     INT NOT NULL,
-    unit_type   ENUM('BILLIARDS','KARAOKE') NOT NULL,
-    session_id  INT NULL,
-    redeemed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_loy_user    FOREIGN KEY (user_id)    REFERENCES users(id),
-    CONSTRAINT fk_loy_session FOREIGN KEY (session_id) REFERENCES sessions(id)
 ) ENGINE=InnoDB;
 
 -- Optional (Could Have): build last.

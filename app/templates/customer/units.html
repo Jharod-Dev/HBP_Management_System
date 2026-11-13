@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="page-heading">
-    <div><p class="eyebrow text-uppercase text-muted small fw-bold mb-2">Live floor status</p><h1>Unit availability</h1>
+    <div><p class="page-kicker mb-2">Live floor status</p><h1>Unit availability</h1>
     <p>Current availability for billiards tables and karaoke booths.</p></div>
 </div>
 
@@ -19,7 +19,7 @@
                     <h3 class="h5 card-title">{{ unit.name }}</h3>
                     <p class="card-text text-muted">{{ unit.category_name }}</p>
                     {% if unit.description %}<p class="card-text">{{ unit.description }}</p>{% endif %}
-                    <span class="badge unit-status text-bg-{{ {'AVAILABLE': 'success', 'OCCUPIED': 'danger', 'RESERVED': 'warning', 'PREPARING': 'info', 'UNAVAILABLE': 'secondary'}[unit.availability_status] }}">
+                    <span class="badge unit-status status-badge status-{{ unit.availability_status|lower }}">
                         {{ unit.availability_status|title }}
                     </span>
                     {% if unit.availability_status == 'OCCUPIED' %}
