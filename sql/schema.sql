@@ -52,6 +52,7 @@ CREATE TABLE email_tokens (
     purpose    ENUM('VERIFY','RESET') NOT NULL,
     code_hash  VARCHAR(255) NOT NULL,
     expires_at DATETIME NOT NULL,
+    attempt_count INT NOT NULL DEFAULT 0,
     used_at    DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

@@ -24,6 +24,6 @@ def send_reservation_decision(reservation):
     try:
         mail.send(message)
     except Exception:
-        current_app.logger.exception("Reservation decision email could not be sent.")
+        current_app.logger.warning("Reservation decision email could not be sent.")
         return False
     return True
