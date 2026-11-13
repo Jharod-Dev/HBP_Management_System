@@ -1,3 +1,4 @@
+import ipaddress
 import os
 from pathlib import Path
 
@@ -5,6 +6,29 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env")
+
+
+def validate_mail_config(config):
+    server = (config.get("MAIL_SERVER") or "localhost").strip().lower()
+    local_servers = {"localhost"}
+    try:
+        is_local = server in local_servers or ipaddress.ip_address(server).is_loopback
+    except ValueError:
+        is_local = server in local_servers
+
+    if (
+        not is_local
+        and not config.get("MAIL_USE_TLS")
+        and not config.get("MAIL_USE_SSL")
+        and not config.get("MAIL_SUPPRESS_SEND")
+        and not config.get("TESTING")
+    ):
+        raise ValueError(
+            "Remote SMTP requires encryption: set MAIL_USE_TLS=true or MAIL_USE_SSL=true."
+        )
+
+    if config.get("MAIL_USE_TLS") and config.get("MAIL_USE_SSL"):
+        raise ValueError("Configure only one SMTP encryption mode: TLS or SSL.")
 
 
 class Config:

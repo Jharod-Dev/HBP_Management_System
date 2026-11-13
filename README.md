@@ -53,6 +53,11 @@ including `MAIL_DEFAULT_SENDER`, are configured in `.env`. Email delivery is
 performed after the database decision has committed; an email failure does not
 undo the decision.
 
+Remote SMTP servers must use encryption: set either `MAIL_USE_TLS=true` or
+`MAIL_USE_SSL=true` in `.env`, but not both. Unencrypted SMTP is permitted only
+for local development mail services such as `localhost`. SMTP credentials
+should be supplied through `.env` and must not be committed.
+
 Administrators manage live sessions at `/admin/sessions`. Sessions can be
 started for confirmed reservations or walk-ins, extended in 30-minute
 increments, and completed manually. A completed unit remains `PREPARING` for

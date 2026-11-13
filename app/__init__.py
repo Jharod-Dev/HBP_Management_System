@@ -2,7 +2,7 @@ from flask import Flask, render_template
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 
-from .config import Config
+from .config import Config, validate_mail_config
 
 csrf = CSRFProtect()
 mail = Mail()
@@ -11,6 +11,7 @@ mail = Mail()
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    validate_mail_config(app.config)
     csrf.init_app(app)
     mail.init_app(app)
 
